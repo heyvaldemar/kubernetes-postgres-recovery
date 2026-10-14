@@ -1,0 +1,17 @@
+# A base backup every day at 03:00 UTC (CloudNativePG's schedule has a
+# seconds field), and one right away when this is applied, so a new cluster
+# can be restored from its first hour. WAL in between comes from archiving.
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: daily
+  namespace: database
+spec:
+  schedule: "0 0 3 * * *"
+  immediate: true
+  backupOwnerReference: self
+  cluster:
+    name: pg
+  method: plugin
+  pluginConfiguration:
+    name: barman-cloud.cloudnative-pg.io

@@ -1,0 +1,12 @@
+# file	old	new	check that must fail	what it plants (each field JSON-encoded)
+"manifests/database/cluster.yaml"	"@sha256:c9be7f221a05b18fe65259d9136affbabe3b39ad91c3b68f8f2f990a45f35f38"	""	"images"	"the database image by tag"
+"platform/plugin-barman-cloud.yaml"	"  tag: \"v0.15.1@sha256:2287a793a804db751edd0d07d44cd549e357677e98a800eb12e2cf7c0d53f9b0\"\n"	"  tag: \"v0.15.1\"\n"	"images"	"the backup sidecar by tag, through the chart's values"
+"manifests/database/cluster.yaml"	"  instances: 3\n"	"  instance: 3\n"	"kubeconform"	"a misspelled field in the Cluster"
+"manifests/database/cluster.yaml"	"  instances: 3\n"	"  instances: 1\n"	"database"	"one instance, nothing to fail over to"
+"manifests/database/cluster.yaml"	"      number: 1\n"	"      number: 0\n"	"database"	"no synchronous standby"
+"manifests/database/cluster.yaml"	"      dataDurability: required\n"	"      dataDurability: preferred\n"	"database"	"commits acknowledged when no standby can confirm them"
+"manifests/database/cluster.yaml"	"      archive_timeout: \"60s\"\n"	"      archive_timeout: \"0\"\n"	"database"	"no bound on how long the last writes wait to be archived"
+"manifests/database/cluster.yaml"	"      isWALArchiver: true\n"	"      isWALArchiver: false\n"	"database"	"base backups without WAL, so no point in time"
+"manifests/database/objectstore.yaml"	"  retentionPolicy: \"7d\"\n"	""	"database"	"no retention window"
+"manifests/recovery/point-in-time.yaml"	"  externalClusters:\n"	"  plugins:\n    - name: barman-cloud.cloudnative-pg.io\n      isWALArchiver: true\n      parameters:\n        barmanObjectName: backups\n  externalClusters:\n"	"database"	"a restore that archives into the backups it reads"
+"manifests/namespaces.yaml"	"  name: database\n  labels:\n    pod-security.kubernetes.io/enforce: restricted\n"	"  name: database\n  labels:\n    pod-security.kubernetes.io/enforce: privileged\n"	"database"	"the database namespace without Pod Security restricted"

@@ -1,0 +1,60 @@
+name: Recovery drill
+
+# A fresh kind cluster with CloudNativePG, the Barman Cloud plugin and an S3
+# bucket, the database from manifests/database, and tests/e2e/run.sh against
+# it: a restore to a point in time before a DROP TABLE, a failover under
+# writes with no acknowledged write lost, and a rebuild from the bucket alone
+# after the cluster and its volumes are deleted. Daily, so a backup that
+# stopped restoring is found the next morning.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "17 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  drill:
+    name: Fresh cluster, every recovery
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install the pinned tools
+        run: ./scripts/install-tools.sh >> "$GITHUB_PATH"
+
+      - name: Create the kind cluster
+        run: kind create cluster --config kind/cluster.yaml --wait 120s
+
+      - name: Install cert-manager, CloudNativePG, the plugin and the bucket
+        run: ./scripts/install.sh
+
+      - name: The database
+        run: |
+          kubectl apply -f manifests/database/
+          kubectl -n database wait --for=condition=Ready cluster/pg --timeout=900s
+
+      - name: The drill
+        run: ./tests/e2e/run.sh
+
+      - name: What the cluster looked like
+        if: failure()
+        run: |
+          kubectl -n database get clusters.postgresql.cnpg.io,backups.postgresql.cnpg.io,pods,pvc -o wide || true
+          kubectl -n database get clusters.postgresql.cnpg.io -o yaml | sed -n '/^  status:/,/^  [a-z]/p' | head -80 || true
+          kubectl get events -A --sort-by=.lastTimestamp | tail -40 || true
+          kubectl -n cnpg-system logs deployment/cnpg-cloudnative-pg --tail=60 || true
+          kubectl -n cnpg-system logs deployment/plugin-barman-cloud --tail=40 || true

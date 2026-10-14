@@ -1,0 +1,18 @@
+# Both namespaces enforce Pod Security "restricted": the database's pods, the
+# backup sidecar the plugin injects into them, and the object store all run
+# without privileges.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: database
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: object-store
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest

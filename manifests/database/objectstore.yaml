@@ -1,0 +1,32 @@
+# Where the database's base backups and WAL go: the S3 bucket "backups".
+# Credentials come from database/backup-s3, made by scripts/install.sh.
+#
+# retentionPolicy is a recovery window: any point in the last 7 days can be
+# restored. Older backups are deleted after the next one completes.
+apiVersion: barmancloud.cnpg.io/v1
+kind: ObjectStore
+metadata:
+  name: backups
+  namespace: database
+spec:
+  retentionPolicy: "7d"
+  configuration:
+    destinationPath: s3://backups/
+    endpointURL: http://seaweedfs.object-store.svc:8333
+    s3Credentials:
+      accessKeyId:
+        name: backup-s3
+        key: ACCESS_KEY_ID
+      secretAccessKey:
+        name: backup-s3
+        key: ACCESS_SECRET_KEY
+    wal:
+      compression: gzip
+    data:
+      compression: gzip
+  # The sidecar the plugin adds to every instance: it ships WAL and takes
+  # base backups, so it gets its own budget.
+  instanceSidecarConfiguration:
+    resources:
+      requests: {cpu: 50m, memory: 64Mi}
+      limits: {memory: 256Mi}

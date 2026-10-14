@@ -1,0 +1,41 @@
+# PostgreSQL 18, three instances: one primary, two standbys, each on its own
+# volume. The image is pinned by digest.
+#
+# What a committed transaction survives:
+# - the loss of the primary: one standby confirms every commit before the
+#   client hears it (synchronous, ANY 1), and dataDurability: required keeps
+#   it that way when no standby can confirm, at the cost of writes waiting;
+# - the loss of the whole cluster: WAL goes to the object store as it is
+#   written, and archive_timeout closes a segment at least once a minute, so
+#   a restore from the bucket alone loses at most the last minute.
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: pg
+  namespace: database
+spec:
+  instances: 3
+  imageName: ghcr.io/cloudnative-pg/postgresql:18.6-minimal-trixie@sha256:c9be7f221a05b18fe65259d9136affbabe3b39ad91c3b68f8f2f990a45f35f38
+  primaryUpdateStrategy: unsupervised
+  enablePDB: true
+  postgresql:
+    synchronous:
+      method: any
+      number: 1
+      dataDurability: required
+    parameters:
+      archive_timeout: "60s"
+  bootstrap:
+    initdb:
+      database: app
+      owner: app
+  storage:
+    size: 1Gi
+  resources:
+    requests: {cpu: 100m, memory: 256Mi}
+    limits: {memory: 512Mi}
+  plugins:
+    - name: barman-cloud.cloudnative-pg.io
+      isWALArchiver: true
+      parameters:
+        barmanObjectName: backups

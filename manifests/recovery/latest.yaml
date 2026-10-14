@@ -1,0 +1,31 @@
+# A new cluster restored from the bucket alone, to the last archived WAL:
+# what is left when the original cluster and its volumes are gone. NAME is
+# filled in by tests/e2e/run.sh, or by hand (docs/runbooks/disaster-recovery.md).
+#
+# It reads from the lost cluster's backups and writes none of its own: no
+# plugins section. To make it the new production cluster, add the plugins
+# section of manifests/database/cluster.yaml: it then archives under its own
+# name, next to the lost cluster's backups and not over them.
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: NAME
+  namespace: database
+spec:
+  instances: 1
+  imageName: ghcr.io/cloudnative-pg/postgresql:18.6-minimal-trixie@sha256:c9be7f221a05b18fe65259d9136affbabe3b39ad91c3b68f8f2f990a45f35f38
+  bootstrap:
+    recovery:
+      source: origin
+  externalClusters:
+    - name: origin
+      plugin:
+        name: barman-cloud.cloudnative-pg.io
+        parameters:
+          barmanObjectName: backups
+          serverName: pg
+  storage:
+    size: 1Gi
+  resources:
+    requests: {cpu: 100m, memory: 256Mi}
+    limits: {memory: 512Mi}

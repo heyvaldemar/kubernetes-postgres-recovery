@@ -1,0 +1,169 @@
+# The S3 store backups and WAL go to, on kind: SeaweedFS, one pod. On a real
+# cluster this is the provider's object storage, and nothing in
+# manifests/database changes but the endpoint and the credentials.
+#
+# The S3 credentials are in the Secret object-store-s3, which
+# scripts/install.sh generates with random keys at install time; the database
+# gets the same keys in database/backup-s3. Neither is in this repository.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: seaweedfs-data
+  namespace: object-store
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: seaweedfs
+  namespace: object-store
+  labels:
+    app.kubernetes.io/name: seaweedfs
+spec:
+  replicas: 1
+  # One pod owns the volume; a rolling update would start the second before
+  # the first lets go of it.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: seaweedfs
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: seaweedfs
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: seaweedfs
+          image: docker.io/chrislusf/seaweedfs:4.48@sha256:4e61d15fd35994cb1e43e1e553dff106794841fd9a99ade2fc8c8bfce4d7872d
+          command: [weed]
+          args:
+            - server
+            - -dir=/data
+            - -ip=$(POD_IP)
+            - -ip.bind=0.0.0.0
+            - -s3
+            - -s3.port=8333
+            - -s3.config=/etc/seaweedfs/s3.json
+            - -master.volumeSizeLimitMB=1024
+          env:
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          ports:
+            - {name: s3, containerPort: 8333}
+            - {name: master, containerPort: 9333}
+            - {name: master-grpc, containerPort: 19333}
+            - {name: filer, containerPort: 8888}
+            - {name: filer-grpc, containerPort: 18888}
+            - {name: volume, containerPort: 8080}
+            - {name: volume-grpc, containerPort: 18080}
+          readinessProbe:
+            tcpSocket:
+              port: s3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /cluster/status
+              port: master
+            initialDelaySeconds: 20
+            periodSeconds: 20
+          resources:
+            requests: {cpu: 50m, memory: 128Mi}
+            limits: {memory: 512Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - {name: data, mountPath: /data}
+            - {name: config, mountPath: /etc/seaweedfs, readOnly: true}
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: seaweedfs-data
+        - name: config
+          secret:
+            secretName: object-store-s3
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: seaweedfs
+  namespace: object-store
+spec:
+  selector:
+    app.kubernetes.io/name: seaweedfs
+  ports:
+    - {name: s3, port: 8333, targetPort: s3}
+    - {name: master, port: 9333, targetPort: master}
+    - {name: master-grpc, port: 19333, targetPort: master-grpc}
+    - {name: filer, port: 8888, targetPort: filer}
+    - {name: filer-grpc, port: 18888, targetPort: filer-grpc}
+---
+# Creates the bucket the database writes to, once SeaweedFS is up. An existing
+# bucket is left as it is.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: create-backups-bucket
+  namespace: object-store
+spec:
+  backoffLimit: 10
+  ttlSecondsAfterFinished: 3600
+  template:
+    spec:
+      restartPolicy: OnFailure
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: create-bucket
+          image: docker.io/chrislusf/seaweedfs:4.48@sha256:4e61d15fd35994cb1e43e1e553dff106794841fd9a99ade2fc8c8bfce4d7872d
+          command:
+            - sh
+            - -c
+            - |
+              set -eu
+              shell() { weed shell -master=seaweedfs:9333 -filer=seaweedfs:8888; }
+              if echo "s3.bucket.list" | shell | grep -qw backups; then
+                echo "bucket backups exists"
+              else
+                echo "s3.bucket.create -name backups" | shell
+                echo "s3.bucket.list" | shell | grep -qw backups
+                echo "bucket backups created"
+              fi
+          resources:
+            requests: {cpu: 10m, memory: 32Mi}
+            limits: {memory: 128Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - name: tmp
+          emptyDir: {}

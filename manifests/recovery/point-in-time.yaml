@@ -1,0 +1,33 @@
+# A new cluster restored from the bucket to a point in time, next to the one
+# it comes from: the base backup before TARGET_TIME, then the archived WAL up
+# to it. NAME and TARGET_TIME are filled in by tests/e2e/run.sh, or by hand
+# (docs/runbooks/point-in-time-recovery.md). TARGET_TIME takes PostgreSQL's
+# timestamp format with a zone, e.g. "2026-10-14 16:50:01.123456+00".
+#
+# It reads from the source's backups and writes none of its own: no plugins
+# section, so it cannot archive into the source's path.
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: NAME
+  namespace: database
+spec:
+  instances: 1
+  imageName: ghcr.io/cloudnative-pg/postgresql:18.6-minimal-trixie@sha256:c9be7f221a05b18fe65259d9136affbabe3b39ad91c3b68f8f2f990a45f35f38
+  bootstrap:
+    recovery:
+      source: origin
+      recoveryTarget:
+        targetTime: "TARGET_TIME"
+  externalClusters:
+    - name: origin
+      plugin:
+        name: barman-cloud.cloudnative-pg.io
+        parameters:
+          barmanObjectName: backups
+          serverName: pg
+  storage:
+    size: 1Gi
+  resources:
+    requests: {cpu: 100m, memory: 256Mi}
+    limits: {memory: 512Mi}
