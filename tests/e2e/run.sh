@@ -214,7 +214,7 @@ for _ in $(seq 1 180); do
   fi
   sleep 1
 done
-[ -n "$promoted" ] && measure "failover: the operator named a new primary ${promoted}s after the kill"
+[ -n "$promoted" ] && measure "promotion: a new primary ${promoted}s after the kill"
 sleep 10
 log="$(k logs writer 2>/dev/null || true)"
 k delete pod writer --wait=false >/dev/null 2>&1 || true
@@ -241,7 +241,7 @@ t = [float(l.split()[2]) for l in os.environ["LOG"].splitlines() if l.startswith
 print("%.1f" % max(b - a for a, b in zip(t, t[1:])) if len(t) > 1 else "")
 PY
 )"
-[ -n "$gap" ] && measure "failover: the longest stretch without an acknowledged write was ${gap}s ($(grep -c '^err ' <<<"$log") writes refused or timed out)"
+[ -n "$gap" ] && measure "write gap: ${gap}s without an acknowledged write ($(grep -c '^err ' <<<"$log") writes refused or timed out)"
 for _ in $(seq 1 90); do [ "$(k get cluster pg -o jsonpath='{.status.readyInstances}')" = 3 ] && break; sleep 2; done
 [ "$(k get cluster pg -o jsonpath='{.status.readyInstances}')" = 3 ] && pass "$P came back as a standby; three instances ready" \
   || fail "the cluster did not return to three ready instances"
@@ -300,6 +300,22 @@ if [ "$(cond pg Ready)" = True ] && [ "$state" = False ] && [ "$expected" -gt 0 
   pass "pg, created again over the old path, is Ready and does not archive: 'Expected empty archive'"
 else
   fail "a cluster over a used path: Ready '$(cond pg Ready)', archiving '$state' ($msg), refusals logged: $expected"
+fi
+
+# A copy the status workflow reads (scripts/status.py), when one is asked for.
+if [ -n "${E2E_RESULTS:-}" ]; then
+  { printf 'R\t%s\n' "${results[@]}"; printf 'M\t%s\n' "${measured[@]:-}"; } | python3 -c '
+import json, sys
+checks, measured = [], []
+for line in sys.stdin:
+    kind, _, text = line.rstrip("\n").partition("\t")
+    if kind == "R" and text:
+        state, _, name = text.partition("  ")
+        checks.append({"state": state.strip(), "name": name.strip()})
+    elif kind == "M" and text:
+        measured.append(text)
+json.dump({"checks": checks, "measured": measured}, sys.stdout)
+' >"$E2E_RESULTS"
 fi
 
 # --- summary -------------------------------------------------------------------

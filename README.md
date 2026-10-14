@@ -4,6 +4,14 @@
 [![Verify](https://github.com/heyvaldemar/kubernetes-postgres-recovery/actions/workflows/verify.yml/badge.svg)](https://github.com/heyvaldemar/kubernetes-postgres-recovery/actions/workflows/verify.yml)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/heyvaldemar/kubernetes-postgres-recovery/badge)](https://scorecard.dev/viewer/?uri=github.com/heyvaldemar/kubernetes-postgres-recovery)
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/15496/badge)](https://www.bestpractices.dev/projects/15496)
+[![e2e, last 30 days](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fheyvaldemar%2Fkubernetes-postgres-recovery%2Fstatus%2Fbadge-days.json)](https://github.com/heyvaldemar/kubernetes-postgres-recovery/blob/status/status.json)
+[![checks](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fheyvaldemar%2Fkubernetes-postgres-recovery%2Fstatus%2Fbadge-checks.json)](https://github.com/heyvaldemar/kubernetes-postgres-recovery/blob/status/status.json)
+[![point in time restore](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fheyvaldemar%2Fkubernetes-postgres-recovery%2Fstatus%2Fbadge-point-in-time-restore.json)](https://github.com/heyvaldemar/kubernetes-postgres-recovery/blob/status/status.json)
+[![restore from the bucket alone](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fheyvaldemar%2Fkubernetes-postgres-recovery%2Fstatus%2Fbadge-restore-from-the-bucket-alone.json)](https://github.com/heyvaldemar/kubernetes-postgres-recovery/blob/status/status.json)
+[![promotion](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fheyvaldemar%2Fkubernetes-postgres-recovery%2Fstatus%2Fbadge-promotion.json)](https://github.com/heyvaldemar/kubernetes-postgres-recovery/blob/status/status.json)
+[![write gap](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fheyvaldemar%2Fkubernetes-postgres-recovery%2Fstatus%2Fbadge-write-gap.json)](https://github.com/heyvaldemar/kubernetes-postgres-recovery/blob/status/status.json)
+
+The second row of badges is not typed by hand: it is the e2e workflow's last 30 days on main, rewritten after every run by [`.github/workflows/status.yml`](.github/workflows/status.yml) into the [`status`](https://github.com/heyvaldemar/kubernetes-postgres-recovery/tree/status) branch.
 
 A backup nobody has restored is a hope with a storage bill. This repository runs PostgreSQL on Kubernetes with CloudNativePG and restores it every day, three ways: to a moment before a `DROP TABLE`, onto a standby after the primary is killed in the middle of writes, and from the bucket alone after the cluster and its volumes are deleted. Every restore is judged by reading the data back.
 
