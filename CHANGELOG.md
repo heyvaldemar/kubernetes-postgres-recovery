@@ -4,6 +4,10 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+_(no unreleased changes yet)_
+
+## [1.0.0] - 2026-10-14
+
 ### Added
 
 - PostgreSQL 18.6 on CloudNativePG 1.30.1, three instances with a synchronous standby required, WAL and daily base backups through the Barman Cloud plugin 0.15.1 to an S3 bucket (SeaweedFS on kind), a one-minute archive ceiling and a 7-day recovery window. Every image by digest; Pod Security restricted.
@@ -13,4 +17,5 @@ All notable changes to this project are documented here. The format follows [Kee
 - Static checks with 11 planted violations, each caught: images by digest in the manifests and the rendered charts, every manifest against the CRDs the pinned charts install, and the properties recovery depends on.
 - Runbooks for point-in-time recovery and disaster recovery, four decision records, a threat model.
 
-[Unreleased]: https://github.com/heyvaldemar/kubernetes-postgres-recovery/commits/main
+[Unreleased]: https://github.com/heyvaldemar/kubernetes-postgres-recovery/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/heyvaldemar/kubernetes-postgres-recovery/releases/tag/v1.0.0

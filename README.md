@@ -29,9 +29,19 @@ Every line is a check in [`tests/e2e/run.sh`](tests/e2e/run.sh) on a fresh clust
 
 ## What the drill measured
 
-DRILL_NUMBERS
+Three runs of the drill on a GitHub-hosted runner, commit [`6e58a4e`](https://github.com/heyvaldemar/kubernetes-postgres-recovery/commit/6e58a4e) ([1](https://github.com/heyvaldemar/kubernetes-postgres-recovery/actions/runs/38608534726), [2](https://github.com/heyvaldemar/kubernetes-postgres-recovery/actions/runs/38609694586), [3](https://github.com/heyvaldemar/kubernetes-postgres-recovery/actions/runs/38610785970)):
 
-The failover number depends on the client as much as on the database. Without a connect timeout, the first measurement here was 136 seconds: the client's connection to the killed primary's address waited out TCP's retries long after a standby had taken over. With `PGCONNECT_TIMEOUT=3` it is the database's own time. An application with no connect timeout turns a failover of seconds into minutes.
+| | Measured |
+|---|---|
+| Acknowledged writes lost when the primary is killed | 0, in every run |
+| From the kill to a new primary named by the operator | 5 to 22 s |
+| Longest stretch without an acknowledged write, client with a 3 s connect timeout | 9 to 31 s |
+| Restore to a point in time, until the restored cluster is ready | 52 s |
+| Restore from the bucket alone, until ready | 50 to 54 s |
+
+The spread in the failover is the operator's: the same kill gave a new primary after 5 seconds once and after 22 seconds twice. On a laptop it was 4 seconds.
+
+The failover number depends on the client as much as on the database. Without a connect timeout, the first measurement here was 136 seconds: the client's connection to the killed primary's address waited out TCP's retries long after a standby had taken over. With `PGCONNECT_TIMEOUT=3` the pause follows the database: a few seconds past the promotion, while the read-write service moves to the new primary and the client's next attempt reaches it. An application with no connect timeout turns a failover of seconds into minutes.
 
 The restore times are the floor of a restore, not a figure for a large database: a 1 GiB volume and a few hundred rows on a GitHub-hosted runner. A restore's time is copying the base backup and replaying WAL, and both grow with the data and with the time since the last base backup.
 
