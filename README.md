@@ -3,6 +3,7 @@
 [![Recovery drill](https://github.com/heyvaldemar/kubernetes-postgres-recovery/actions/workflows/e2e.yml/badge.svg)](https://github.com/heyvaldemar/kubernetes-postgres-recovery/actions/workflows/e2e.yml)
 [![Verify](https://github.com/heyvaldemar/kubernetes-postgres-recovery/actions/workflows/verify.yml/badge.svg)](https://github.com/heyvaldemar/kubernetes-postgres-recovery/actions/workflows/verify.yml)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/heyvaldemar/kubernetes-postgres-recovery/badge)](https://scorecard.dev/viewer/?uri=github.com/heyvaldemar/kubernetes-postgres-recovery)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/15496/badge)](https://www.bestpractices.dev/projects/15496)
 
 A backup nobody has restored is a hope with a storage bill. This repository runs PostgreSQL on Kubernetes with CloudNativePG and restores it every day, three ways: to a moment before a `DROP TABLE`, onto a standby after the primary is killed in the middle of writes, and from the bucket alone after the cluster and its volumes are deleted. Every restore is judged by reading the data back.
 
