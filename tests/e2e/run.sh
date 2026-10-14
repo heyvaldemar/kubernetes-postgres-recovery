@@ -185,14 +185,20 @@ k wait --for=condition=Ready pod/writer --timeout=120s >/dev/null 2>&1
 oks() { k logs writer 2>/dev/null | grep -c '^ok '; }
 for _ in $(seq 1 60); do [ "$(oks)" -ge 25 ] && break; sleep 1; done
 before="$(oks)"
+t_kill=$SECONDS
 k delete pod "$P" --grace-period=0 --force >/dev/null 2>&1
 echo "  killed $P with $before writes acknowledged"
 new=""
-for _ in $(seq 1 90); do
+promoted=""
+for _ in $(seq 1 180); do
   new="$(primary)"
-  [ -n "$new" ] && [ "$new" != "$P" ] && [ "$(oks)" -gt "$before" ] && break
-  sleep 2
+  if [ -n "$new" ] && [ "$new" != "$P" ]; then
+    [ -n "$promoted" ] || promoted=$((SECONDS - t_kill))
+    [ "$(oks)" -gt "$before" ] && break
+  fi
+  sleep 1
 done
+[ -n "$promoted" ] && measure "failover: the operator named a new primary ${promoted}s after the kill"
 sleep 10
 log="$(k logs writer 2>/dev/null || true)"
 k delete pod writer --wait=false >/dev/null 2>&1 || true
@@ -219,7 +225,7 @@ t = [float(l.split()[2]) for l in os.environ["LOG"].splitlines() if l.startswith
 print("%.1f" % max(b - a for a, b in zip(t, t[1:])) if len(t) > 1 else "")
 PY
 )"
-[ -n "$gap" ] && measure "failover: the longest stretch without an acknowledged write was ${gap}s"
+[ -n "$gap" ] && measure "failover: the longest stretch without an acknowledged write was ${gap}s ($(grep -c '^err ' <<<"$log") writes refused or timed out)"
 for _ in $(seq 1 90); do [ "$(k get cluster pg -o jsonpath='{.status.readyInstances}')" = 3 ] && break; sleep 2; done
 [ "$(k get cluster pg -o jsonpath='{.status.readyInstances}')" = 3 ] && pass "$P came back as a standby; three instances ready" \
   || fail "the cluster did not return to three ready instances"
