@@ -1,0 +1,28 @@
+# Two recovery targets at once: refused, rather than one silently chosen.
+# expect: Recovery target options are mutually exclusive
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: plant-restore-two-targets
+  namespace: database
+spec:
+  instances: 1
+  imageName: ghcr.io/cloudnative-pg/postgresql:18.6-minimal-trixie@sha256:c9be7f221a05b18fe65259d9136affbabe3b39ad91c3b68f8f2f990a45f35f38
+  bootstrap:
+    recovery:
+      source: origin
+      recoveryTarget:
+        targetTime: "2026-10-14 16:50:01+00"
+        targetXID: "1234"
+  externalClusters:
+    - name: origin
+      plugin:
+        name: barman-cloud.cloudnative-pg.io
+        parameters:
+          barmanObjectName: backups
+          serverName: pg
+  storage:
+    size: 1Gi
+  resources:
+    requests: {cpu: 100m, memory: 256Mi}
+    limits: {memory: 512Mi}

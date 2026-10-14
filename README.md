@@ -6,6 +6,10 @@
 
 A backup nobody has restored is a hope with a storage bill. This repository runs PostgreSQL on Kubernetes with CloudNativePG and restores it every day, three ways: to a moment before a `DROP TABLE`, onto a standby after the primary is killed in the middle of writes, and from the bucket alone after the cluster and its volumes are deleted. Every restore is judged by reading the data back.
 
+![The recovery drill, as `make test` prints it](docs/demo/drill.gif)
+
+`make test` on a laptop, recorded with asciinema; waits are cut to two seconds and nothing else is edited. [`docs/demo/drill.cast`](docs/demo/drill.cast) replays it in a terminal (`asciinema play`).
+
 It is a reference, not a product, and it does not run in production anywhere. It runs on kind at no cloud cost, with SeaweedFS standing in for S3.
 
 ## What is proven, and how
@@ -14,6 +18,7 @@ Every line is a check in [`tests/e2e/run.sh`](tests/e2e/run.sh) on a fresh clust
 
 | Claim | Proof |
 |---|---|
+| A malformed restore is refused before it starts | five restore manifests dry-run against the operator: a target that is not a time, two targets, an undeclared source are refused; a well-formed one is admitted, and so is a target time with no zone, which the operator reads as UTC (`tests/e2e/plants`) |
 | A commit the client was told about survives the loss of the primary | a client inserts a row every 200 ms through the read-write service; the primary pod is force-deleted; every row the client saw committed is on the new primary |
 | The database can be put back to a second before a mistake | 100 rows, a target time, row 101, then `DROP TABLE`. A new cluster restored from the bucket to the target has the 100 rows, not row 101, and the table |
 | The bucket alone is enough | the cluster and its volumes are deleted; a cluster restored from the base backup and the archived WAL has the rows written before the loss |
@@ -52,7 +57,7 @@ flowchart LR
   b -->|recovery to a time, or to the end| r[(restored cluster)]
 ```
 
-- **The operator and the plugin** ([`scripts/install.sh`](scripts/install.sh), [`platform/`](platform/)): CloudNativePG 1.30.1 and its Barman Cloud plugin 0.15.1 from their charts, cert-manager 1.21.2 for the plugin's certificates. Every image by digest.
+- **The operator and the plugin** ([`scripts/install.sh`](scripts/install.sh), [`values/`](values/)): CloudNativePG 1.30.1 and its Barman Cloud plugin 0.15.1 from their charts, cert-manager 1.21.2 for the plugin's certificates. Every image by digest.
 - **The database** ([`manifests/database/`](manifests/database/)): PostgreSQL 18.6, three instances, one synchronous standby required, WAL archived through the plugin's sidecar with a one-minute ceiling, a base backup daily and one at creation, a 7-day recovery window. Pod Security `restricted`.
 - **The bucket** ([`manifests/object-store/`](manifests/object-store/)): SeaweedFS's S3 API, with keys generated at install and kept only in the cluster.
 - **Restores** ([`manifests/recovery/`](manifests/recovery/)): a new cluster next to the old one, from the bucket, to a time or to the end. It reads the source's backups and cannot write into them.
@@ -85,7 +90,7 @@ The [threat model](docs/threat-model.md) lists every threat with its control and
 
 ```
 kind/                 the cluster: one node, its image by digest
-platform/             chart values: every image by digest
+values/               chart values: every image by digest
 scripts/              install, validate, CRD schemas, pinned tools
 manifests/            namespaces, the bucket, the database, restore templates
 tests/e2e/run.sh      the drill

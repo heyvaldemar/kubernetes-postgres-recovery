@@ -15,6 +15,7 @@ The rows in the database, and the ability to get them back: to a moment before a
 | The cluster and its volumes are lost | the bucket outside the cluster; `archive_timeout: 60s` | e2e 5: cluster and volumes deleted, restore from the bucket alone; the last write's WAL archived within a minute with no forced switch |
 | Backups stop and nobody notices | `ContinuousArchiving` condition; the daily drill | e2e 2 and 6: archiving reported working; a cluster that is Ready and does not archive is detected |
 | A restore writes over the backups it reads | restore templates have no archiver; the plugin refuses a used path | static: a restore template with `plugins` fails; e2e 6: the refusal is observed |
+| A malformed restore starts and runs to the wrong point | the operator's admission webhook | e2e 0: four malformed restore manifests refused or admitted as expected, one well-formed control admitted |
 | An image changes under its tag | every image by digest, in manifests and in the rendered charts | static `images`, with planted tags |
 | A pod gets more than it needs | Pod Security `restricted` on the database and the bucket | static: both namespaces enforce it; the cluster runs under it in every e2e run |
 | Backup credentials in Git | generated at install, kept only in the cluster | `scripts/install.sh`; nothing in the repository |
@@ -24,6 +25,8 @@ The rows in the database, and the ability to get them back: to a moment before a
 **Ready is not backed up.** A cluster created under the name of one whose archive is still in the bucket serves every query and reports Ready, while the plugin refuses to archive over the old path (`Expected empty archive`). Only the `ContinuousArchiving` condition says so. Monitoring that watches Ready would show green over a database with no backups. The drill's step 6 builds that cluster and requires all three: Ready, not archiving, the refusal in the log.
 
 **A failover is only as short as the client's timeout.** The first measurement of the failover was 136 seconds without an acknowledged write. The database had moved on long before: the client had no connect timeout, and its connection to the killed primary's address waited out TCP's SYN retries. With `PGCONNECT_TIMEOUT=3` the measurement is the database's. An application without a connect timeout, or a pool without a health check, turns a seconds-long failover into minutes.
+
+**A target time without a zone is read as UTC.** The operator refuses a target that is not a time, two targets at once, and a source that is not declared, all at apply, before any restore runs. It admits `2026-10-14 16:50:01` and reads it as UTC (`ParseTargetTime` in CloudNativePG's machinery). Typed from a wall clock outside UTC, that is a restore to the wrong hour, and every check after it passes against the wrong data. The runbook says to write the zone; the drill's step 0 keeps a plant that fails if the operator's behaviour changes.
 
 ## Residual risks
 

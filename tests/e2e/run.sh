@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # run.sh - the recovery drill, against the cluster `make up` builds.
 #
+#   0. the operator refuses a malformed restore at apply (tests/e2e/plants),
+#      and admits the well-formed control
 #   1. the cluster: three instances, and a standby confirming every commit
 #   2. backups: WAL archiving works, and a base backup is in the bucket
 #   3. point in time: rows, a target time, a row after it, then DROP TABLE.
@@ -65,6 +67,20 @@ restore() {
   k wait --for=condition=Ready "cluster/$2" --timeout=900s >/dev/null 2>&1 || return 1
   echo $((SECONDS - t0))
 }
+
+# --- 0 -------------------------------------------------------------------------
+step "0. a malformed restore is refused before it starts"
+for plant in "$HERE"/plants/*.yaml; do
+  name="$(basename "$plant" .yaml)"
+  expect="$(sed -n 's/^# expect: //p' "$plant")"
+  out="$(kubectl apply --dry-run=server -f "$plant" 2>&1)"
+  if [ "$expect" = admitted ]; then
+    grep -q "created (server dry run)" <<<"$out" && pass "$name: admitted" || fail "$name: expected admitted, got: ${out:0:300}"
+  else
+    grep -qF -- "$expect" <<<"$out" && pass "$name: refused ($expect)" \
+      || fail "$name: expected a refusal saying '$expect', got: ${out:0:300}"
+  fi
+done
 
 # --- 1 -------------------------------------------------------------------------
 step "1. the cluster"

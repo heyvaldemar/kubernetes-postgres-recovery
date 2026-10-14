@@ -5,7 +5,7 @@
 #                resources against the CRDs the pinned charts install, so a
 #                misspelled field fails instead of being ignored
 #   images       every image by digest: in the manifests, and in what the
-#                three charts render with platform/*.yaml
+#                three charts render with values/*.yaml
 #   database     what recovery depends on: three instances, a synchronous
 #                standby that holds writes rather than lose them, WAL
 #                archiving with a bound on its delay, a retention window, a
@@ -28,17 +28,17 @@ BARMAN_PLUGIN_CHART="$(sed -n 's/^BARMAN_PLUGIN_CHART=//p' scripts/install.sh)"
 default_schemas='https://raw.githubusercontent.com/yannh/kubernetes-json-schema/817113f21a2643311cbc3e992bb44ffe1c416c54/{{.NormalizedKubernetesVersion}}-standalone{{.StrictSuffix}}/{{.ResourceKind}}{{.KindSuffix}}.json'
 K8S_SCHEMAS="${K8S_SCHEMAS:-$default_schemas}"
 
-# The three charts, rendered with platform/*.yaml into .cache/charts. Prints
+# The three charts, rendered with values/*.yaml into .cache/charts. Prints
 # the directory.
 render() {
   local out=.cache/charts
   mkdir -p "$out"
   if ! { helm template cert-manager cert-manager --repo https://charts.jetstack.io --version "$CERT_MANAGER_CHART" \
-           -n cert-manager -f platform/cert-manager.yaml >"$out/cert-manager.yaml" &&
+           -n cert-manager -f values/cert-manager.yaml >"$out/cert-manager.yaml" &&
          helm template cnpg cloudnative-pg --repo https://cloudnative-pg.github.io/charts --version "$CNPG_CHART" \
-           -n cnpg-system -f platform/cloudnative-pg.yaml >"$out/cnpg.yaml" &&
+           -n cnpg-system -f values/cloudnative-pg.yaml >"$out/cnpg.yaml" &&
          helm template plugin-barman-cloud plugin-barman-cloud --repo https://cloudnative-pg.github.io/charts \
-           --version "$BARMAN_PLUGIN_CHART" -n cnpg-system -f platform/plugin-barman-cloud.yaml >"$out/plugin.yaml"; }; then
+           --version "$BARMAN_PLUGIN_CHART" -n cnpg-system -f values/plugin-barman-cloud.yaml >"$out/plugin.yaml"; }; then
     echo "could not render the charts" >&2
     return 1
   fi
@@ -63,13 +63,13 @@ check_kubeconform() {
   kubeconform -strict -summary -output text -kubernetes-version "$KUBE_VERSION" \
     -cache .cache/kubeconform -schema-location "$K8S_SCHEMAS" \
     -schema-location '.cache/schemas/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
-    manifests/namespaces.yaml manifests/object-store manifests/database .cache/recovery
+    manifests/namespaces.yaml manifests/object-store manifests/database .cache/recovery tests/e2e/plants
 }
 
 check_images() {
   local charts bad
   charts="$(render)" || return 1
-  bad="$( { grep -rnE '^\s*(image|imageName):' manifests | grep -v '@sha256:';
+  bad="$( { grep -rnE '^\s*(image|imageName):' manifests tests/e2e/plants | grep -v '@sha256:';
             grep -hoE '(image|value|SIDECAR_IMAGE): "?[a-z0-9.-]+\.(io|com)/[^" ]+' "$charts"/*.yaml \
               | sed -E 's/^[A-Z_a-z]+: "?//' | sort -u | grep -v '@sha256:'; } || true)"
   if [ -n "$bad" ]; then echo "images without a digest:"; echo "$bad"; return 1; fi

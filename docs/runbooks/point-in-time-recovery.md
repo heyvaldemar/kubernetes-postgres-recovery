@@ -6,7 +6,7 @@ The drill runs these steps every day (`tests/e2e/run.sh`, step 3).
 
 ## 1. Find the second before the mistake
 
-PostgreSQL's log has the statement and its time when `log_statement` covers it; the application's log usually has the request. Take a time just before it, in UTC, in PostgreSQL's format:
+PostgreSQL's log has the statement and its time when `log_statement` covers it; the application's log usually has the request. Take a time just before it, in PostgreSQL's format, and write the zone. The operator accepts a time without one and reads it as UTC: an incident at 14:05 on a clock five hours behind UTC, typed as `14:05:00`, restores to five hours before it (the drill keeps a plant for this, `tests/e2e/plants/restore-target-without-a-zone.yaml`). In UTC:
 
 ```bash
 kubectl -n database exec pg-1 -c postgres -- psql -d app -qtAc \

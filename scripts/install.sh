@@ -2,7 +2,7 @@
 # install.sh - what the database needs, into the current cluster: cert-manager,
 # the CloudNativePG operator and its Barman Cloud plugin, and SeaweedFS as the
 # S3 store backups go to. Chart versions are pinned below, every image by
-# digest in platform/*.yaml. Safe to run again.
+# digest in values/*.yaml. Safe to run again.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 CERT_MANAGER_CHART=v1.21.2
@@ -12,16 +12,16 @@ say() { printf '\n== %s\n' "$*"; }
 
 say "cert-manager $CERT_MANAGER_CHART"
 helm upgrade --install cert-manager cert-manager --repo https://charts.jetstack.io --version "$CERT_MANAGER_CHART" \
-  --namespace cert-manager --create-namespace --wait --timeout 10m -f "$ROOT/platform/cert-manager.yaml"
+  --namespace cert-manager --create-namespace --wait --timeout 10m -f "$ROOT/values/cert-manager.yaml"
 
 say "CloudNativePG, chart $CNPG_CHART"
 helm upgrade --install cnpg cloudnative-pg --repo https://cloudnative-pg.github.io/charts --version "$CNPG_CHART" \
-  --namespace cnpg-system --create-namespace --wait --timeout 10m -f "$ROOT/platform/cloudnative-pg.yaml"
+  --namespace cnpg-system --create-namespace --wait --timeout 10m -f "$ROOT/values/cloudnative-pg.yaml"
 
 # The plugin goes in the operator's namespace; the operator finds it there.
 say "Barman Cloud plugin, chart $BARMAN_PLUGIN_CHART"
 helm upgrade --install plugin-barman-cloud plugin-barman-cloud --repo https://cloudnative-pg.github.io/charts \
-  --version "$BARMAN_PLUGIN_CHART" --namespace cnpg-system --wait --timeout 10m -f "$ROOT/platform/plugin-barman-cloud.yaml"
+  --version "$BARMAN_PLUGIN_CHART" --namespace cnpg-system --wait --timeout 10m -f "$ROOT/values/plugin-barman-cloud.yaml"
 kubectl -n cnpg-system rollout status deployment/plugin-barman-cloud --timeout=300s
 
 kubectl apply -f "$ROOT/manifests/namespaces.yaml" >/dev/null
