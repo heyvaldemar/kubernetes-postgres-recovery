@@ -121,7 +121,7 @@ docs/                 decisions, runbooks, threat model
 
 [`docs/decisions/`](docs/decisions/): CloudNativePG with the Barman Cloud plugin over an operator-less setup; a synchronous standby with writes held rather than lost; a one-minute archive ceiling; restores that never archive into their source. Each ends with how the choice would be explained to a customer.
 
-This repository is the database half of [aws-eks-reference-platform](https://github.com/heyvaldemar/aws-eks-reference-platform), whose backups are volume snapshots by Velero. A volume snapshot of a running PostgreSQL is crash-consistent at best and has no point in time between snapshots; WAL archiving has every second.
+This repository is the database half of [aws-eks-reference-platform](https://github.com/heyvaldemar/aws-eks-reference-platform), whose backups are volume snapshots by Velero. A volume snapshot of a running PostgreSQL is crash-consistent at best and has no point in time between snapshots; WAL archiving has every second. [kubernetes-supply-chain-admission](https://github.com/heyvaldemar/kubernetes-supply-chain-admission) decides which images the cluster runs, and [kubernetes-ai-agent-sandbox](https://github.com/heyvaldemar/kubernetes-ai-agent-sandbox) what an AI agent in it can reach.
 
 ## Questions, bugs and changes
 
