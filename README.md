@@ -129,7 +129,7 @@ Open an [issue](https://github.com/heyvaldemar/kubernetes-postgres-recovery/issu
 
 ## How this is built
 
-One maintainer and an AI agent. The agent writes most of the code; the decisions are mine, and so is the verification. Nothing merges on the agent's report that it works: it merges on the checks above, and each of them has been shown the failure it exists to catch. The drill's first local run failed on a permission, not on recovery: the test client wrote as the application's user into a table the superuser owned. The fix is in the drill, and the error message now reaches its output.
+One maintainer and an AI agent. The agent writes most of the code; the decisions are mine, and so is the verification. Nothing merges on the agent's report that it works: it merges on the checks above, and each of them has been shown the failure it exists to catch. The rules the agent works under are in [AGENTS.md](AGENTS.md). The drill's first local run failed on a permission, not on recovery: the test client wrote as the application's user into a table the superuser owned. The fix is in the drill, and the error message now reaches its output.
 
 ## License
 

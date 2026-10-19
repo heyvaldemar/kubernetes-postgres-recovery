@@ -6,11 +6,13 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Added
 
+- `AGENTS.md` (and a `CLAUDE.md` that imports it): the rules an AI agent working on this repository is held to: claims only as checks in the drill or the static checks, a check trusted only after it has failed, risky changes proved on a branch, where each pin lives, measured numbers only from named runs, how a release is cut and verified, and no backup called good until a restore from it has been read back.
 - A weekly check of every pin against upstream: `scripts/check-freshness.py`, run by the verify workflow on its schedule and by hand. It compares the charts the scripts install with their repository's index, every image pinned by digest with what its tag resolves to now, the tools in `tools.lock` with their newest releases, and the CI images. Dependabot here watched the workflows' actions and nothing else, so a chart, an image or a tool could fall behind without a sound. Its first run found helm one patch behind.
 - Live status: every e2e run uploads its checks and measurements (`E2E_RESULTS`), and `.github/workflows/status.yml` rewrites the `status` branch after each run with the last 30 days on main: green days, the streak, the latest checks (`scripts/status.py`). The README's second row of badges reads it.
 
 ### Changed
 
+- The status workflow hands its push credential to git through git's environment, not its command line, which any process on the runner can read.
 - helm v4.3.1 in `tools.lock`, its hashes checked against helm's own checksum files.
 
 ## [1.0.0] - 2026-10-14
