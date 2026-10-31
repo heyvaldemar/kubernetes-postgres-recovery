@@ -1,0 +1,103 @@
+{
+  "repository": "heyvaldemar/kubernetes-postgres-recovery",
+  "workflow": "e2e.yml",
+  "written_at": "2026-10-31T13:53:50Z",
+  "window_days": 30,
+  "days_with_runs": 18,
+  "green_days": 18,
+  "streak_days": 18,
+  "runs": 32,
+  "runs_passed": 32,
+  "latest": {
+    "conclusion": "success",
+    "at": "2026-10-31T10:24:52Z",
+    "url": "https://github.com/heyvaldemar/kubernetes-postgres-recovery/actions/runs/41192651554",
+    "commit": "46d56c2",
+    "checks_passed": 19,
+    "checks_failed": 0,
+    "checks": [
+      {
+        "state": "PASS",
+        "name": "restore-from-an-undeclared-source: refused (External cluster nowhere not found)"
+      },
+      {
+        "state": "PASS",
+        "name": "restore-target-not-a-time: refused (The format of TargetTime is invalid)"
+      },
+      {
+        "state": "PASS",
+        "name": "restore-target-without-a-zone: admitted"
+      },
+      {
+        "state": "PASS",
+        "name": "restore-to-a-time: admitted"
+      },
+      {
+        "state": "PASS",
+        "name": "restore-two-targets: refused (Recovery target options are mutually exclusive)"
+      },
+      {
+        "state": "PASS",
+        "name": "three instances ready, pg-1 the primary"
+      },
+      {
+        "state": "PASS",
+        "name": "two standbys streaming; a commit waits for one of them (ANY 1 (\"pg-2\",\"pg-3\",\"pg-1\"))"
+      },
+      {
+        "state": "PASS",
+        "name": "continuous WAL archiving to the bucket"
+      },
+      {
+        "state": "PASS",
+        "name": "base backup daily-20261031102639 completed"
+      },
+      {
+        "state": "PASS",
+        "name": "the bucket holds base backups and WAL for pg"
+      },
+      {
+        "state": "PASS",
+        "name": "the WAL up to the DROP is in the bucket"
+      },
+      {
+        "state": "PASS",
+        "name": "restored to the target: the 100 rows before it, not row 101, and the table the DROP removed"
+      },
+      {
+        "state": "PASS",
+        "name": "pg-2 took over from pg-1"
+      },
+      {
+        "state": "PASS",
+        "name": "all 68 acknowledged writes are on the new primary"
+      },
+      {
+        "state": "PASS",
+        "name": "pg-1 came back as a standby; three instances ready"
+      },
+      {
+        "state": "PASS",
+        "name": "archive_timeout shipped the last write's WAL within 46s, without a forced switch"
+      },
+      {
+        "state": "PASS",
+        "name": "pg and its volumes are gone"
+      },
+      {
+        "state": "PASS",
+        "name": "the restored cluster has the 50 rows written before the loss"
+      },
+      {
+        "state": "PASS",
+        "name": "pg, created again over the old path, is Ready and does not archive: 'Expected empty archive'"
+      }
+    ],
+    "measured": [
+      "point-in-time restore: ready in 51s",
+      "promotion: a new primary 23s after the kill",
+      "write gap: 26.2s without an acknowledged write (28 writes refused or timed out)",
+      "restore from the bucket alone: ready in 52s"
+    ]
+  }
+}
