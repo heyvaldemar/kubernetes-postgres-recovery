@@ -43,7 +43,7 @@ Everything is pinned by digest, hash or commit:
 - SeaweedFS in `manifests/object-store/seaweedfs.yaml`, the kind node in `kind/cluster.yaml`;
 - tools by version and sha256 per platform in `tools.lock`, CI images in `ci-images.pins`, actions by commit SHA in the workflows (the SLSA generator stays on a tag: it refuses a SHA), Kubernetes schemas at a fixed commit in `scripts/validate.sh`.
 
-Dependabot reads only the actions. `scripts/check-freshness.py`, weekly in the verify workflow, reports every other pin that fell behind and changes nothing. Those bumps are by hand, with the new hash checked against the publisher's, and pass the same checks as any change.
+Dependabot reads only the actions. `scripts/check-freshness.py`, weekly in the verify workflow, reports every other pin that fell behind and changes nothing. Those bumps are by hand, with the new hash checked against the publisher's, and pass the same checks as any change. A release younger than three days is not pinned here: a pin moved by hand waits until its release is three days old, and so do Dependabot's version updates (its default cooldown since 14 July 2026, which fleet conformance does not let `.github/dependabot.yml` shorten); its security updates open at once. Three days is long enough for a compromised release to be noticed and pulled. The freshness check, which reads what `freshness.json` lists, warns on a younger release and names the moment it becomes a failure.
 
 ## Numbers
 
