@@ -16,6 +16,10 @@ All notable changes to this project are documented here. The format follows [Kee
 - The status workflow hands its push credential to git through git's environment, not its command line, which any process on the runner can read.
 - helm v4.3.1 in `tools.lock`, its hashes checked against helm's own checksum files.
 
+### Security
+
+- **A release is verified for its exact signer** (69cbbd8). `.github/workflows/release-assets.yml` checks the signature against this repository's `release-assets.yml` on the ref the run ran on; before, any workflow of the repository on any branch passed. A changed archive must now be refused in the tool's own words, so Sigstore out of reach or a missing tool fails the job instead of passing it. A run started by hand runs only from `main`.
+
 ## [1.0.0] - 2026-10-14
 
 ### Added
